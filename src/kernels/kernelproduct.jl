@@ -1,9 +1,13 @@
 """
-    KernelProduct(kernels::Array{Kernel})
+`KernelProduct(kernels::Array{Kernel})`
 Create a multiplication of kernels.
 One can also use the operator `*`
 ```
-    kernelmatrix(SqExponentialKernel()*LinearKernel(),X) == kernelmatrix(SqExponentialKernel(),X).*kernelmatrix(LinearKernel(),X)
+k1 = SqExponentialKernel()
+k2 = LinearKernel()
+k = KernelProduct([k1,k2])
+kernelmatrix(k,X) == kernelmatrix(k1,X).*kernelmatrix(k2,X)
+kernelmatrix(k,X) == kernelmatrix(k1*k2,X)
 ```
 """
 struct KernelProduct{T,Tr} <: Kernel{T,Tr}
@@ -14,13 +18,15 @@ function KernelProduct(kernels::AbstractVector{<:Kernel})
     KernelProduct{eltype(kernels),Transform}(kernels)
 end
 
+params(k::KernelProduct) = params.(k.kernels)
+
 Base.:*(k1::Kernel,k2::Kernel) = KernelProduct([k1,k2])
 Base.:*(k1::KernelProduct,k2::KernelProduct) = KernelProduct(vcat(k1.kernels,k2.kernels)) #TODO Add test
 Base.:*(k::Kernel,kp::KernelProduct) = KernelProduct(vcat(k,kp.kernels))
 Base.:*(kp::KernelProduct,k::Kernel) = KernelProduct(vcat(kp.kernels,k))
 
 Base.length(k::KernelProduct) = length(k.kernels)
-metric(k::KernelProduct) = getmetric.(k.kernels) #TODO Add test
+metric(k::KernelProduct) = metric.(k.kernels) #TODO Add test
 transform(k::KernelProduct) = transform.(k.kernels) #TODO Add test
 transform(k::KernelProduct,x::AbstractVecOrMat) = transform.(k.kernels,[x]) #TODO Add test
 transform(k::KernelProduct,x::AbstractVecOrMat,obsdim::Int) = transform.(k.kernels,[x],obsdim) #TODO Add test
